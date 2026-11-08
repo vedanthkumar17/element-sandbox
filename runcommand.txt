@@ -1,1 +1,0 @@
-gcc main.c -o falling_sand -lraylib -lGL -lm -lpthread -ldl -lrt -lX11
