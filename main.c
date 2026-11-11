@@ -129,16 +129,22 @@ static void try_fire(int x, int y) {
         return;
     }
 
-    // Fire can ignite nearby sand only in this simple material model.
+    // Fire can ignite nearby sand and grass.
     for (int oy = -1; oy <= 1; oy++) {
         for (int ox = -1; ox <= 1; ox++) {
             int nx = x + ox;
             int ny = y + oy;
 
-            if (inside(nx, ny) && world[ny][nx] == SAND &&
-                GetRandomValue(0, 999) < 5) {
-                world[ny][nx] = FIRE;
-                fire_life[ny][nx] = (unsigned char)GetRandomValue(25, 60);
+            if (inside(nx, ny)) {
+                if (world[ny][nx] == SAND && GetRandomValue(0, 999) < 5) {
+                    world[ny][nx] = FIRE;
+                    fire_life[ny][nx] = (unsigned char)GetRandomValue(25, 60);
+                } else if (world[ny][nx] == GRASS && GetRandomValue(0, 99) < 50) {
+                    world[ny][nx] = FIRE;
+                    fire_life[ny][nx] = (unsigned char)GetRandomValue(35, 80);
+                    grass_timer[ny][nx] = 0;
+                    updated[ny][nx] = 1;
+                }
             }
         }
     }
@@ -149,6 +155,49 @@ static void try_fire(int x, int y) {
 }
 
 static void try_grass(int x, int y) {
+    // 1. Burn when touching fire
+    for (int oy = -1; oy <= 1; oy++) {
+        for (int ox = -1; ox <= 1; ox++) {
+            int nx = x + ox;
+            int ny = y + oy;
+
+            if (inside(nx, ny) && world[ny][nx] == FIRE) {
+                world[y][x] = FIRE;
+                fire_life[y][x] = (unsigned char)GetRandomValue(35, 80);
+                grass_timer[y][x] = 0;
+                updated[y][x] = 1;
+                return;
+            }
+        }
+    }
+
+    // 2. Light powder falling behavior (similar to sand, but slower/lighter feel).
+    // Once it lands on stone or another solid, it stops falling and can spread.
+    bool on_solid = (inside(x, y + 1) && (world[y + 1][x] == STONE || world[y + 1][x] == SAND)) ||
+                    (y + 1 >= GRID_H);
+
+    if (!on_solid) {
+        // Falls on ~65% of frames for a lighter feel than sand
+        if (GetRandomValue(0, 99) < 65) {
+            int dir = GetRandomValue(0, 1) ? 1 : -1;
+
+            if (empty_at(x, y + 1)) {
+                swap_cells(x, y, x, y + 1);
+                return;
+            } else if (empty_at(x + dir, y + 1)) {
+                swap_cells(x, y, x + dir, y + 1);
+                return;
+            } else if (empty_at(x - dir, y + 1)) {
+                swap_cells(x, y, x - dir, y + 1);
+                return;
+            }
+        } else if (empty_at(x, y + 1) || empty_at(x - 1, y + 1) || empty_at(x + 1, y + 1)) {
+            // Still drifting in the air; do not spread while falling
+            return;
+        }
+    }
+
+    // 3. Spreading behavior (existing sideways spreading logic onto empty cells above stone)
     if (grass_timer[y][x] > 0) {
         grass_timer[y][x]--;
         return;

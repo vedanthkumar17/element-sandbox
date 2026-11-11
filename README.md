@@ -7,6 +7,7 @@ A small interactive pixel-material sandbox written in C.
 - Water falls and spreads sideways.
 - Stone is stationary.
 - Fire rises, flickers through a few colors, and expires.
+- Grass falls like a light powder, settles on stone or solid surfaces, spreads sideways across stone, and burns when touching fire.
 - Mouse painting, erasing, pause, reset, and brush sizing.
 
 ## Controls
@@ -14,6 +15,7 @@ A small interactive pixel-material sandbox written in C.
 - `2`: Water
 - `3`: Stone
 - `4`: Fire
+- `5`: Grass
 - `0`: Eraser
 - Left mouse: paint selected material
 - Right mouse: erase
@@ -56,7 +58,9 @@ gcc main.c -o falling_sand.exe -O2 -Wall -Wextra -std=c11 -I"path\\to\\raylib\\i
 The world is a 160 x 120 grid. Each cell stores a material ID. Every frame,
 the simulation scans from the bottom upward and applies simple local rules:
 sand tries to move down or diagonally, water tries down and then sideways,
-and fire drifts upward and decays.
+fire drifts upward and decays, and grass falls like a light powder (with a
+lighter, slower drift than sand), settles once it lands on stone or solid surfaces
+to spread sideways across stone, and ignites when touching fire.
 
 This is a deliberately simple first version: it is a sandbox, not a physically
 accurate fluid or combustion model.
