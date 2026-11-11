@@ -21,7 +21,13 @@ typedef enum {
 static unsigned char world[GRID_H][GRID_W];
 static unsigned char updated[GRID_H][GRID_W];
 static unsigned char fire_life[GRID_H][GRID_W];
+static unsigned char fire_falling[GRID_H][GRID_W];
 static unsigned char grass_timer[GRID_H][GRID_W];
+static float temperature[GRID_H][GRID_W];
+
+#define AMBIENT_TEMP 20.0f
+#define FIRE_TEMP 450.0f
+#define GRASS_IGNITE_TEMP 100.0f
 
 static int selected = SAND;
 static int brush_radius = 3;
@@ -40,9 +46,17 @@ static void swap_cells(int x, int y, int nx, int ny) {
     fire_life[y][x] = fire_life[ny][nx];
     fire_life[ny][nx] = life;
 
+    unsigned char falling = fire_falling[y][x];
+    fire_falling[y][x] = fire_falling[ny][nx];
+    fire_falling[ny][nx] = falling;
+
     unsigned char timer = grass_timer[y][x];
     grass_timer[y][x] = grass_timer[ny][nx];
     grass_timer[ny][nx] = timer;
+
+    float t = temperature[y][x];
+    temperature[y][x] = temperature[ny][nx];
+    temperature[ny][nx] = t;
 
     updated[ny][nx] = 1;
 }
@@ -61,6 +75,7 @@ static bool bury_grass(int x, int y, int nx, int ny) {
 
     grass_timer[ny][nx] = 0;
     fire_life[ny][nx] = 0;
+    fire_falling[ny][nx] = 0;
     updated[ny][nx] = 1;
 
     return true;
@@ -117,19 +132,86 @@ static void try_water(int x, int y) {
 }
 
 static void try_fire(int x, int y) {
+    // Extinguish if touching water
+    for (int oy = -1; oy <= 1; oy++) {
+        for (int ox = -1; ox <= 1; ox++) {
+            int nx = x + ox;
+            int ny = y + oy;
+            if (inside(nx, ny) && world[ny][nx] == WATER) {
+                world[y][x] = EMPTY;
+                fire_life[y][x] = 0;
+                fire_falling[y][x] = 0;
+                temperature[y][x] = 30.0f;
+                return;
+            }
+        }
+    }
+
+    // Maintain high temperature and heat nearby cells
+    temperature[y][x] = FIRE_TEMP;
+    for (int oy = -2; oy <= 1; oy++) {
+        for (int ox = -1; ox <= 1; ox++) {
+            int nx = x + ox;
+            int ny = y + oy;
+            if (inside(nx, ny)) {
+                // Thermal plume: heat rises strongly upward
+                float target = (oy < 0) ? 320.0f : ((ox == 0 && oy == 0) ? FIRE_TEMP : 240.0f);
+                if (temperature[ny][nx] < target) {
+                    temperature[ny][nx] += (target - temperature[ny][nx]) * 0.35f;
+                }
+            }
+        }
+    }
+
+    // 1. Initial falling phase: falls downward like a light particle
+    if (fire_falling[y][x] > 0) {
+        fire_falling[y][x]--;
+
+        int dir = GetRandomValue(0, 1) ? 1 : -1;
+        if (empty_at(x, y + 1)) {
+            if (GetRandomValue(0, 99) < 75) {
+                swap_cells(x, y, x, y + 1);
+            }
+            return;
+        } else if (empty_at(x + dir, y + 1)) {
+            if (GetRandomValue(0, 99) < 65) {
+                swap_cells(x, y, x + dir, y + 1);
+            }
+            return;
+        } else if (empty_at(x - dir, y + 1)) {
+            if (GetRandomValue(0, 99) < 65) {
+                swap_cells(x, y, x - dir, y + 1);
+            }
+            return;
+        } else {
+            // Landed on a surface/particle: transition to rising
+            fire_falling[y][x] = 0;
+        }
+    }
+
+    // 2. Rising phase & lifetime countdown
     if (fire_life[y][x] == 0) {
         fire_life[y][x] = (unsigned char)GetRandomValue(35, 90);
     } else {
         fire_life[y][x]--;
     }
 
-    // Fire rises into empty space.
-    if (empty_at(x, y - 1) && GetRandomValue(0, 99) < 65) {
-        swap_cells(x, y, x, y - 1);
+    if (fire_life[y][x] == 0) {
+        world[y][x] = EMPTY;
         return;
     }
 
-    // Fire can ignite nearby sand and grass.
+    // Fire rises upward into empty space
+    int rdir = GetRandomValue(0, 1) ? 1 : -1;
+    if (empty_at(x, y - 1) && GetRandomValue(0, 99) < 65) {
+        swap_cells(x, y, x, y - 1);
+        return;
+    } else if (empty_at(x + rdir, y - 1) && GetRandomValue(0, 99) < 30) {
+        swap_cells(x, y, x + rdir, y - 1);
+        return;
+    }
+
+    // Direct ignition of adjacent flammable materials
     for (int oy = -1; oy <= 1; oy++) {
         for (int ox = -1; ox <= 1; ox++) {
             int nx = x + ox;
@@ -139,36 +221,44 @@ static void try_fire(int x, int y) {
                 if (world[ny][nx] == SAND && GetRandomValue(0, 999) < 5) {
                     world[ny][nx] = FIRE;
                     fire_life[ny][nx] = (unsigned char)GetRandomValue(25, 60);
-                } else if (world[ny][nx] == GRASS && GetRandomValue(0, 99) < 50) {
+                    fire_falling[ny][nx] = 0;
+                    temperature[ny][nx] = FIRE_TEMP;
+                } else if (world[ny][nx] == GRASS) {
                     world[ny][nx] = FIRE;
-                    fire_life[ny][nx] = (unsigned char)GetRandomValue(35, 80);
+                    fire_life[ny][nx] = (unsigned char)GetRandomValue(40, 85);
+                    fire_falling[ny][nx] = 0;
                     grass_timer[ny][nx] = 0;
+                    temperature[ny][nx] = FIRE_TEMP;
                     updated[ny][nx] = 1;
                 }
             }
         }
     }
-
-    if (fire_life[y][x] == 0) {
-        world[y][x] = EMPTY;
-    }
 }
 
 static void try_grass(int x, int y) {
-    // 1. Burn when touching fire
+    // 1. Burn when touching fire or when temperature gets hot enough
+    bool touching_fire = false;
     for (int oy = -1; oy <= 1; oy++) {
         for (int ox = -1; ox <= 1; ox++) {
             int nx = x + ox;
             int ny = y + oy;
-
             if (inside(nx, ny) && world[ny][nx] == FIRE) {
-                world[y][x] = FIRE;
-                fire_life[y][x] = (unsigned char)GetRandomValue(35, 80);
-                grass_timer[y][x] = 0;
-                updated[y][x] = 1;
-                return;
+                touching_fire = true;
+                break;
             }
         }
+        if (touching_fire) break;
+    }
+
+    if (touching_fire || temperature[y][x] >= GRASS_IGNITE_TEMP) {
+        world[y][x] = FIRE;
+        fire_life[y][x] = (unsigned char)GetRandomValue(40, 85);
+        fire_falling[y][x] = 0;
+        grass_timer[y][x] = 0;
+        temperature[y][x] = FIRE_TEMP;
+        updated[y][x] = 1;
+        return;
     }
 
     // 2. Light powder falling behavior (similar to sand, but slower/lighter feel).
@@ -219,6 +309,22 @@ static void try_grass(int x, int y) {
     grass_timer[y][x] = (unsigned char)GetRandomValue(45, 120);
 }
 
+static void update_temperature(void) {
+    for (int y = 0; y < GRID_H; y++) {
+        for (int x = 0; x < GRID_W; x++) {
+            if (temperature[y][x] > AMBIENT_TEMP) {
+                float diff = temperature[y][x] - AMBIENT_TEMP;
+                temperature[y][x] -= diff * 0.04f;
+                if (temperature[y][x] < AMBIENT_TEMP + 0.5f) {
+                    temperature[y][x] = AMBIENT_TEMP;
+                }
+            } else if (temperature[y][x] < AMBIENT_TEMP) {
+                temperature[y][x] += (AMBIENT_TEMP - temperature[y][x]) * 0.04f;
+            }
+        }
+    }
+}
+
 static void update_world(void) {
     for (int y = 0; y < GRID_H; y++) {
         for (int x = 0; x < GRID_W; x++) {
@@ -246,6 +352,8 @@ static void update_world(void) {
             }
         }
     }
+
+    update_temperature();
 }
 
 static void paint_at_mouse(void) {
@@ -272,14 +380,25 @@ static void paint_at_mouse(void) {
 
             if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
                 world[y][x] = (unsigned char)selected;
-                fire_life[y][x] = selected == FIRE
-                    ? (unsigned char)GetRandomValue(35, 90) : 0;
+                if (selected == FIRE) {
+                    fire_life[y][x] = (unsigned char)GetRandomValue(45, 95);
+                    fire_falling[y][x] = (unsigned char)GetRandomValue(60, 100);
+                    temperature[y][x] = FIRE_TEMP;
+                } else {
+                    fire_life[y][x] = 0;
+                    fire_falling[y][x] = 0;
+                    if (selected == WATER) {
+                        temperature[y][x] = 15.0f;
+                    }
+                }
                 grass_timer[y][x] = selected == GRASS
                     ? (unsigned char)GetRandomValue(45, 120) : 0;
             } else if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
                 world[y][x] = EMPTY;
                 fire_life[y][x] = 0;
+                fire_falling[y][x] = 0;
                 grass_timer[y][x] = 0;
+                temperature[y][x] = AMBIENT_TEMP;
             }
         }
     }
@@ -380,6 +499,18 @@ static void draw_ui(void) {
 
     DrawText("[ / ]", 310, 20, 12, (Color){ 120, 128, 142, 255 });
 
+    // Cursor temperature readout
+    Vector2 mouse = GetMousePosition();
+    int mx = (int)mouse.x / CELL;
+    int my = (int)mouse.y / CELL;
+    if (inside(mx, my)) {
+        float t = temperature[my][mx];
+        Color temp_col = (t >= GRASS_IGNITE_TEMP) ? (Color){ 255, 120, 60, 255 }
+                       : (t > 40.0f)              ? (Color){ 245, 195, 90, 255 }
+                                                  : (Color){ 145, 185, 230, 220 };
+        DrawText(TextFormat("%d C", (int)t), 365, 19, 14, temp_col);
+    }
+
     // Secondary row: Material palette hotkeys with active indicator
     static const struct {
         int id;
@@ -429,6 +560,12 @@ int main(void) {
     srand((unsigned int)time(NULL));
     SetRandomSeed((unsigned int)time(NULL));
 
+    for (int y = 0; y < GRID_H; y++) {
+        for (int x = 0; x < GRID_W; x++) {
+            temperature[y][x] = AMBIENT_TEMP;
+        }
+    }
+
     InitWindow(SCREEN_W, SCREEN_H, "C Falling Sand Simulator");
     SetTargetFPS(60);
 
@@ -446,7 +583,9 @@ int main(void) {
                 for (int x = 0; x < GRID_W; x++) {
                     world[y][x] = EMPTY;
                     fire_life[y][x] = 0;
+                    fire_falling[y][x] = 0;
                     grass_timer[y][x] = 0;
+                    temperature[y][x] = AMBIENT_TEMP;
                 }
             }
         }

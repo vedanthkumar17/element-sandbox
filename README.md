@@ -4,10 +4,11 @@ A small interactive pixel-material sandbox written in C.
 
 ## Features
 - Sand falls, piles up, and displaces water.
-- Water falls and spreads sideways.
+- Water falls and spreads sideways, extinguishing fire.
 - Stone is stationary.
-- Fire rises, flickers through a few colors, and expires.
-- Grass falls like a light powder, settles on stone or solid surfaces, spreads sideways across stone, and burns when touching fire.
+- Fire falls downward like a light particle upon creation, transitions to rising flames upon landing or after 1–2 seconds, heats nearby cells, and expires over time.
+- Temperature system simulates heat generation, thermal plumes, and ambient dissipation.
+- Grass falls like a light powder, settles on stone or solid surfaces, spreads sideways across stone, and combusts when touching fire or reaching ignition temperature.
 - Mouse painting, erasing, pause, reset, and brush sizing.
 
 ## Controls
@@ -55,12 +56,16 @@ gcc main.c -o falling_sand.exe -O2 -Wall -Wextra -std=c11 -I"path\\to\\raylib\\i
 ```
 
 ## How it works
-The world is a 160 x 120 grid. Each cell stores a material ID. Every frame,
-the simulation scans from the bottom upward and applies simple local rules:
+The world is a 160 x 120 grid. Each cell stores a material ID and a local temperature value.
+Every frame, the simulation scans from the bottom upward and applies local rules:
 sand tries to move down or diagonally, water tries down and then sideways,
-fire drifts upward and decays, and grass falls like a light powder (with a
-lighter, slower drift than sand), settles once it lands on stone or solid surfaces
-to spread sideways across stone, and ignites when touching fire.
+and grass falls like a light powder before settling onto stone or solid surfaces to spread sideways.
 
-This is a deliberately simple first version: it is a sandbox, not a physically
-accurate fluid or combustion model.
+Fire and temperature:
+- When newly created, fire falls downward like a light particle/ember.
+- Upon landing or after ~1–2 seconds, it switches to rising upward like flickering flames.
+- Fire maintains a high temperature (450°C) and radiates heat outward, forming an upward thermal plume.
+- Grass catches fire upon direct contact with flames or when ambient heat exceeds its ignition threshold (100°C), resulting in natural wildfire spreading.
+- Cells gradually dissipate heat back toward room temperature (20°C), and water rapidly cools and extinguishes fire.
+
+This is a deliberately simple sandbox model focused on intuitive and responsive material interactions.
