@@ -61,24 +61,42 @@ void paint_at_mouse(void) {
 
             if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
                 world[y][x] = (unsigned char)selected;
+                wood_health[y][x] = 0;
+                leaves_ash[y][x] = 0;
+
                 if (selected == FIRE) {
                     fire_life[y][x] = (unsigned char)GetRandomValue(45, 95);
                     fire_falling[y][x] = (unsigned char)GetRandomValue(60, 100);
+                    smoke_life[y][x] = 0;
                     temperature[y][x] = FIRE_TEMP;
                 } else {
                     fire_life[y][x] = 0;
                     fire_falling[y][x] = 0;
                     if (selected == WATER) {
                         temperature[y][x] = 15.0f;
+                        smoke_life[y][x] = 0;
+                    } else if (selected == OIL) {
+                        temperature[y][x] = 20.0f;
+                        smoke_life[y][x] = 0;
+                    } else if (selected == SMOKE) {
+                        smoke_life[y][x] = (unsigned char)GetRandomValue(60, 110);
+                        temperature[y][x] = 35.0f;
+                    } else {
+                        smoke_life[y][x] = 0;
+                        temperature[y][x] = AMBIENT_TEMP;
                     }
                 }
-                grass_timer[y][x] = selected == GRASS
+
+                grass_timer[y][x] = (selected == GRASS)
                     ? (unsigned char)GetRandomValue(45, 120) : 0;
             } else if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
                 world[y][x] = EMPTY;
                 fire_life[y][x] = 0;
                 fire_falling[y][x] = 0;
                 grass_timer[y][x] = 0;
+                smoke_life[y][x] = 0;
+                wood_health[y][x] = 0;
+                leaves_ash[y][x] = 0;
                 temperature[y][x] = AMBIENT_TEMP;
             }
         }
@@ -86,12 +104,16 @@ void paint_at_mouse(void) {
 }
 
 void handle_input(void) {
-    if (IsKeyPressed(KEY_ONE)) selected = SAND;
-    if (IsKeyPressed(KEY_TWO)) selected = WATER;
+    if (IsKeyPressed(KEY_ONE))   selected = SAND;
+    if (IsKeyPressed(KEY_TWO))   selected = WATER;
     if (IsKeyPressed(KEY_THREE)) selected = STONE;
-    if (IsKeyPressed(KEY_FOUR)) selected = FIRE;
-    if (IsKeyPressed(KEY_FIVE)) selected = GRASS;
-    if (IsKeyPressed(KEY_ZERO)) selected = EMPTY;
+    if (IsKeyPressed(KEY_FOUR))  selected = FIRE;
+    if (IsKeyPressed(KEY_FIVE))  selected = GRASS;
+    if (IsKeyPressed(KEY_SIX))   selected = WOOD;
+    if (IsKeyPressed(KEY_SEVEN)) selected = ASH;
+    if (IsKeyPressed(KEY_EIGHT)) selected = SMOKE;
+    if (IsKeyPressed(KEY_NINE))  selected = OIL;
+    if (IsKeyPressed(KEY_ZERO))  selected = EMPTY;
     if (IsKeyPressed(KEY_SPACE)) paused = !paused;
 
     if (IsKeyPressed(KEY_R)) {

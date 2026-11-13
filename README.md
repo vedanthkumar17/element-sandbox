@@ -2,14 +2,27 @@
 
 A modular, interactive pixel-material sandbox written in C using [raylib](https://www.raylib.com/).
 
-## Features
-- **Sand**: Falls, piles up at angles of repose, and displaces water.
-- **Water**: Falls and spreads sideways, extinguishing fire and cooling cells.
-- **Stone**: Stationary, impermeable barrier.
-- **Fire**: Falls downward as embers when created, transitions to rising flickering flames upon landing or after a short delay, heats nearby cells, forms thermal plumes, and expires over time.
-- **Grass**: Falls like a light powder, settles on stone/solids, spreads laterally across stone surfaces, and combusts when exposed to fire or temperatures >= 100°C.
-- **Thermal System**: Models cell temperatures, thermal conduction, upward convection plumes, and gradual dissipation to ambient room temperature (20°C).
-- **Interactive UI**: Real-time HUD showing material selection, brush size with visual indicator, hover temperature readout, palette shortcuts, pause indicator, and brush radius adjustment.
+## Features & Materials
+
+### Materials
+1. **Sand (`1`)**: Falls under gravity, forms natural angular piles, and displaces lighter liquids (water, oil) and ash.
+2. **Water (`2`)**: Falls and spreads sideways. Quenches regular fires, cools heated cells, and is denser than oil (sinks beneath it).
+3. **Stone (`3`)**: Heavy rock and gravel. Falls and piles up like gravel/sand, sinks through liquids, and forms a solid foundation for other materials (like grass) to rest on.
+4. **Fire (`4`)**: Falls initially as hot embers, transitions to flickering rising flames, generates upward thermal convection plumes, and combusts flammable materials.
+5. **Grass (`5`)**: Falls like a light powder, settles on solid surfaces, spreads laterally across stone and wood, and combusts when heated or touched by fire.
+6. **Wood (`6`)**: Solid structural material. Ignites from direct contact or temperatures >= 200°C. Burns gradually, radiating heat, emitting leaping flames and rising smoke, before crumbling into ash.
+7. **Ash (`7`)**: Fine powder residue created from burning wood and grass. Falls and heaps like sand; slowly settles into water.
+8. **Smoke (`8`)**: Lightweight gas produced by combustion. Rises upward, floats up through liquids, billows sideways, and gradually dissipates.
+9. **Oil (`9`)**: Viscous liquid that falls and spreads. Less dense than water, causing it to float on top of water surfaces. Highly flammable—ignites at >= 70°C, burns longer than normal fire with intense heat, and generates thick smoke plumes.
+10. **Eraser (`0`)**: Clears cells back to empty space and restores ambient temperature.
+
+### Material Reactions & Interactions
+- **Fire + Grass**: Grass ignites violently, creating leaping flames, rising smoke, and leaving behind ash.
+- **Fire + Wood**: Wood smolders and burns with visual embers, generating roaring fire and smoke before degrading into falling ash.
+- **Oil + Water**: Oil floats on top of water pools; water poured on oil sinks straight through.
+- **Fire + Oil**: Oil catches fire easily and burns longer with hot flames (520°C) and billowing dark smoke. Burning oil floating on water remains ignited on the surface.
+- **Water + Fire / Burning Wood**: Water quenches flames and cools smoldering wood.
+- **Thermal System**: Models conduction, thermal plumes, ignition thresholds, and ambient cooling (20°C).
 
 ## Controls
 - `1`: Select Sand
@@ -17,11 +30,15 @@ A modular, interactive pixel-material sandbox written in C using [raylib](https:
 - `3`: Select Stone
 - `4`: Select Fire
 - `5`: Select Grass
-- `0`: Eraser
+- `6`: Select Wood
+- `7`: Select Ash
+- `8`: Select Smoke
+- `9`: Select Oil
+- `0`: Eraser (Empty)
 - **Left Mouse Button (LMB)**: Paint selected material
-- **Right Mouse Button (RMB)**: Erase material (clears to empty, resets temperature to ambient)
+- **Right Mouse Button (RMB)**: Erase material (clears to empty, resets temperature)
 - `Space`: Pause / Resume simulation
-- `R`: Reset canvas
+- `R`: Reset world canvas
 - `[` and `]`: Decrease / Increase brush radius (1 to 12 px)
 
 ## Project Architecture & File Structure
@@ -33,7 +50,7 @@ element-sandbox/
 ├── common.h         # Shared constants (grid sizes, temperatures) and ParticleType enum
 ├── world.h          # Grid storage declarations, swap helpers, and simulation interfaces
 ├── world.c          # Grid state allocation, cell manipulation, update_world(), temperature dissipation
-├── particles.h      # Material-specific behavior declarations (try_sand, try_water, etc.)
+├── particles.h      # Material-specific behavior declarations (try_sand, try_stone, try_oil, etc.)
 ├── particles.c      # Physics and interaction logic for all materials
 ├── renderer.h       # Visual rendering interface declarations
 ├── renderer.c       # World pixel rendering, material colors, and HUD/UI drawing
@@ -46,21 +63,26 @@ element-sandbox/
 
 ### Module Responsibilities
 
-- **`common.h`**: Defines grid dimensions (`GRID_W = 160`, `GRID_H = 120`, `CELL = 6`), screen dimensions, ambient & ignition temperatures, and the `ParticleType` enum (`EMPTY`, `SAND`, `WATER`, `STONE`, `FIRE`, `GRASS`).
-- **`world.h` / `world.c`**: Owns the 2D simulation arrays (`world`, `updated`, `fire_life`, `fire_falling`, `grass_timer`, `temperature`), bounds-checking (`inside`), empty checks (`empty_at`), atomic cell swapping (`swap_cells`), global grid resetting (`reset_world`), and temperature dissipation (`update_temperature`).
-- **`particles.h` / `particles.c`**: Encapsulates material rules:
-  - `try_sand()`: gravity, sliding diagonally, displacing water, burying grass.
-  - `try_water()`: downward flow and multi-step horizontal spread.
-  - `try_fire()`: water quenching, thermal plume generation, falling ember vs. rising flame phases, flammable ignition.
-  - `try_grass()`: thermal & contact ignition, light powder falling, lateral growth on stone.
-- **`renderer.h` / `renderer.c`**: Draws the world grid pixels with material color variations, and renders the translucent HUD showing active material, brush preview circle, hover cell temperature, palette hotkeys, and pause banner.
-- **`input.h` / `input.c`**: Processes keyboard inputs (hotkeys 0-5, pause toggle, canvas reset, brush resize) and mouse painting with circular brush stamp.
-- **`main.c`**: Minimal coordinator; initializes raylib, world, and input systems, runs the 60 FPS loop, and handles clean teardown.
+- **`common.h`**: Defines grid dimensions (`GRID_W = 160`, `GRID_H = 120`, `CELL = 6`), screen dimensions (`960x720`), ambient & ignition thresholds (`FIRE_TEMP`, `GRASS_IGNITE_TEMP`, `WOOD_IGNITE_TEMP`, `OIL_IGNITE_TEMP`), and the complete `ParticleType` enum.
+- **`world.h` / `world.c`**: Owns simulation grid arrays (`world`, `updated`, `fire_life`, `fire_falling`, `grass_timer`, `smoke_life`, `wood_health`, `leaves_ash`, `temperature`), boundary checks (`inside`), cell swaps (`swap_cells`), and ambient temperature diffusion (`update_temperature`).
+- **`particles.h` / `particles.c`**: Encapsulates material physics:
+  - `try_sand()`: gravity, slope sliding, displacing water/oil/ash, burying grass.
+  - `try_water()`: gravity, lateral flow, sinking beneath lighter oil.
+  - `try_stone()`: gravel/rock gravity, piling at angles of repose, sinking through liquids.
+  - `try_fire()`: water quenching, thermal plumes, combustion of grass, wood, and oil.
+  - `try_grass()`: combustion into Fire + Smoke + Ash, powder falling, lateral growth on stone/wood.
+  - `try_wood()`: solid stability, burning stages, fire & smoke emission, crumbling into ash.
+  - `try_ash()`: fine powder gravity and piling.
+  - `try_smoke()`: buoyant upward drift, liquid bubbling, lifetime dissipation.
+  - `try_oil()`: liquid flow, floating on water, rapid cascading flammability, long burn life.
+- **`renderer.h` / `renderer.c`**: Renders particle pixel colors with natural texture variations, burning embers, translucent smoke alpha, and the interactive HUD overlay.
+- **`input.h` / `input.c`**: Handles 1–9 and 0 material hotkeys, pause toggle, canvas reset, brush resizing, and circular mouse painting.
+- **`main.c`**: Minimal application entry point and 60 FPS update loop.
 
 ---
 
 ## Requirements
-- A C compiler supporting C11 (GCC or Clang)
+- A C compiler supporting C99 or C11 (GCC or Clang)
 - `make` (optional, for build automation)
 - [raylib](https://www.raylib.com/) 5.x development libraries
 
@@ -76,7 +98,7 @@ sudo apt update
 sudo apt install build-essential libraylib-dev
 ```
 
-Compile using `make`:
+Compile and run using `make`:
 ```bash
 make
 ./falling_sand
@@ -84,20 +106,7 @@ make
 
 Or compile directly with `gcc`:
 ```bash
-gcc -Wall -Wextra -std=c11 -O2 main.c world.c particles.c renderer.c input.c -o falling_sand -lraylib -lGL -lm -lpthread -ldl -lrt -lX11
-./falling_sand
-```
-
-### macOS
-
-Install raylib via Homebrew:
-```bash
-brew install raylib
-```
-
-Compile:
-```bash
-gcc -Wall -Wextra -std=c11 -O2 main.c world.c particles.c renderer.c input.c -o falling_sand -lraylib -framework OpenGL -framework Cocoa -framework IOKit -framework CoreVideo
+gcc main.c world.c particles.c renderer.c input.c -o falling_sand -Wall -Wextra -std=c99 -lraylib -lGL -lm -lpthread -ldl -lrt -lX11
 ./falling_sand
 ```
 
@@ -105,44 +114,6 @@ gcc -Wall -Wextra -std=c11 -O2 main.c world.c particles.c renderer.c input.c -o 
 
 Compile using GCC:
 ```bash
-gcc -Wall -Wextra -std=c11 -O2 main.c world.c particles.c renderer.c input.c -o falling_sand.exe -I"path\to\raylib\include" -L"path\to\raylib\lib" -lraylib -lopengl32 -lgdi32 -lwinmm
+gcc main.c world.c particles.c renderer.c input.c -o falling_sand.exe -O2 -Wall -Wextra -std=c99 -I"path\to\raylib\include" -L"path\to\raylib\lib" -lraylib -lopengl32 -lgdi32 -lwinmm
 falling_sand.exe
 ```
-
----
-
-## How to Add a New Material
-
-The multi-file structure makes adding a new material straightforward:
-
-1. **Add enum value** in `common.h`:
-   ```c
-   typedef enum {
-       EMPTY = 0,
-       SAND,
-       WATER,
-       STONE,
-       FIRE,
-       GRASS,
-       OIL // <- New material
-   } ParticleType;
-   ```
-
-2. **Implement movement / reaction logic** in `particles.h` and `particles.c`:
-   - Declare `void try_oil(int x, int y);` in `particles.h`.
-   - Implement `try_oil(int x, int y)` in `particles.c` using `swap_cells`, `empty_at`, and `inside`.
-
-3. **Register in simulation step** in `world.c`:
-   Add a case in `update_world()`:
-   ```c
-   case OIL: try_oil(x, y); break;
-   ```
-
-4. **Define visual colors and UI representation** in `renderer.c`:
-   - Add a case in `material_color()` for in-world pixel colors.
-   - Add a case in `material_name()` and `material_ui_color()` for HUD rendering.
-   - Add an entry to `palette_items[]` in `draw_ui()`.
-
-5. **Add input selection** in `input.c`:
-   - Add a hotkey in `handle_input()` (e.g. `if (IsKeyPressed(KEY_SIX)) selected = OIL;`).
-   - If the material requires specific initialization when painted (e.g., custom temperature or life timer), add it to `paint_at_mouse()`.

@@ -9,6 +9,9 @@ unsigned char updated[GRID_H][GRID_W];
 unsigned char fire_life[GRID_H][GRID_W];
 unsigned char fire_falling[GRID_H][GRID_W];
 unsigned char grass_timer[GRID_H][GRID_W];
+unsigned char smoke_life[GRID_H][GRID_W];
+unsigned char wood_health[GRID_H][GRID_W];
+unsigned char leaves_ash[GRID_H][GRID_W];
 float temperature[GRID_H][GRID_W];
 
 bool inside(int x, int y) {
@@ -35,6 +38,18 @@ void swap_cells(int x, int y, int nx, int ny) {
     unsigned char timer = grass_timer[y][x];
     grass_timer[y][x] = grass_timer[ny][nx];
     grass_timer[ny][nx] = timer;
+
+    unsigned char slife = smoke_life[y][x];
+    smoke_life[y][x] = smoke_life[ny][nx];
+    smoke_life[ny][nx] = slife;
+
+    unsigned char whealth = wood_health[y][x];
+    wood_health[y][x] = wood_health[ny][nx];
+    wood_health[ny][nx] = whealth;
+
+    unsigned char lash = leaves_ash[y][x];
+    leaves_ash[y][x] = leaves_ash[ny][nx];
+    leaves_ash[ny][nx] = lash;
 
     float t = temperature[y][x];
     temperature[y][x] = temperature[ny][nx];
@@ -80,8 +95,13 @@ void update_world(void) {
             switch (world[y][x]) {
                 case SAND:  try_sand(x, y); break;
                 case WATER: try_water(x, y); break;
+                case STONE: try_stone(x, y); break;
                 case FIRE:  try_fire(x, y); break;
                 case GRASS: try_grass(x, y); break;
+                case WOOD:  try_wood(x, y); break;
+                case ASH:   try_ash(x, y); break;
+                case SMOKE: try_smoke(x, y); break;
+                case OIL:   try_oil(x, y); break;
                 default: break;
             }
         }
@@ -98,6 +118,9 @@ void reset_world(void) {
             fire_life[y][x] = 0;
             fire_falling[y][x] = 0;
             grass_timer[y][x] = 0;
+            smoke_life[y][x] = 0;
+            wood_health[y][x] = 0;
+            leaves_ash[y][x] = 0;
             temperature[y][x] = AMBIENT_TEMP;
         }
     }

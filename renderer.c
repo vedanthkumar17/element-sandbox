@@ -22,6 +22,30 @@ Color material_color(int material, int x, int y) {
         }
         case GRASS:
             return (Color){72, 195, 82, 255};
+        case WOOD:
+            if (wood_health[y][x] > 0) {
+                // Burning wood with glowing ember highlights
+                return (GetRandomValue(0, 1) == 0)
+                    ? (Color){255, 115, 35, 255}
+                    : (Color){185, 65, 25, 255};
+            }
+            // Natural wood grain pattern
+            return ((x + y / 2) % 6 == 0)
+                ? (Color){118, 75, 38, 255}
+                : (((x + y) % 3 == 0) ? (Color){145, 95, 50, 255} : (Color){132, 84, 44, 255});
+        case ASH:
+            return ((x * 7 + y * 13) % 5 == 0)
+                ? (Color){188, 188, 192, 255}
+                : (((x + y) % 2 == 0) ? (Color){164, 164, 170, 255} : (Color){145, 145, 150, 255});
+        case SMOKE: {
+            int life = smoke_life[y][x];
+            unsigned char alpha = (unsigned char)(life > 75 ? 190 : (life * 2 + 40));
+            return (Color){115, 118, 128, alpha};
+        }
+        case OIL:
+            return ((x + y) % 4 == 0)
+                ? (Color){58, 50, 38, 255}
+                : (((x * 3 + y) % 5 == 0) ? (Color){32, 28, 22, 255} : (Color){46, 40, 32, 255});
         default:
             return BLANK;
     }
@@ -45,12 +69,16 @@ void draw_world(void) {
 
 const char *material_name(int material) {
     switch (material) {
-        case SAND: return "SAND";
+        case SAND:  return "SAND";
         case WATER: return "WATER";
         case STONE: return "STONE";
-        case FIRE: return "FIRE";
+        case FIRE:  return "FIRE";
         case GRASS: return "GRASS";
-        default: return "ERASER";
+        case WOOD:  return "WOOD";
+        case ASH:   return "ASH";
+        case SMOKE: return "SMOKE";
+        case OIL:   return "OIL";
+        default:    return "ERASER";
     }
 }
 
@@ -61,6 +89,10 @@ Color material_ui_color(int material) {
         case STONE: return (Color){125, 132, 144, 255};
         case FIRE:  return (Color){255, 130, 30, 255};
         case GRASS: return (Color){72, 195, 82, 255};
+        case WOOD:  return (Color){145, 95, 50, 255};
+        case ASH:   return (Color){175, 175, 182, 255};
+        case SMOKE: return (Color){150, 155, 165, 255};
+        case OIL:   return (Color){68, 60, 48, 255};
         default:    return (Color){60, 64, 75, 255};
     }
 }
@@ -71,7 +103,7 @@ void draw_ui(void) {
     bool paused = is_paused();
 
     // Semi-transparent dark rounded container
-    Rectangle panel = { 10, 10, 440, 76 };
+    Rectangle panel = { 10, 10, 720, 76 };
     DrawRectangleRounded(panel, 0.16f, 8, (Color){ 12, 14, 18, 225 });
     DrawRectangleRoundedLinesEx(panel, 0.16f, 8, 1.0f, (Color){ 45, 52, 65, 220 });
 
@@ -125,11 +157,15 @@ void draw_ui(void) {
         { STONE, "3 Stone" },
         { FIRE,  "4 Fire" },
         { GRASS, "5 Grass" },
+        { WOOD,  "6 Wood" },
+        { ASH,   "7 Ash" },
+        { SMOKE, "8 Smoke" },
+        { OIL,   "9 Oil" },
         { EMPTY, "0 Eraser" }
     };
 
     int cur_x = 20;
-    for (int i = 0; i < 6; i++) {
+    for (int i = 0; i < 10; i++) {
         int text_w = MeasureText(palette_items[i].label, 12);
         bool is_sel = (selected == palette_items[i].id);
         if (is_sel) {
@@ -138,11 +174,11 @@ void draw_ui(void) {
         } else {
             DrawText(palette_items[i].label, cur_x, 42, 12, (Color){ 135, 142, 156, 255 });
         }
-        cur_x += text_w + 11;
+        cur_x += text_w + 10;
     }
 
     // Tertiary row: Keybindings & mouse controls
-    DrawText("SPACE Pause  |  R Reset  |  RMB Erase  |  LMB Paint",
+    DrawText("SPACE Pause  |  R Reset  |  RMB Erase  |  LMB Paint  |  [ / ] Brush Size",
              20, 61, 11, (Color){ 105, 112, 126, 255 });
 
     // Paused indicator banner

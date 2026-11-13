@@ -15,6 +15,8 @@
 #define AMBIENT_TEMP 20.0f
 #define FIRE_TEMP 450.0f
 #define GRASS_IGNITE_TEMP 100.0f
+#define WOOD_IGNITE_TEMP 200.0f
+#define OIL_IGNITE_TEMP 70.0f
 
 // Particle material identifiers
 typedef enum {
@@ -23,7 +25,11 @@ typedef enum {
     WATER,
     STONE,
     FIRE,
-    GRASS
+    GRASS,
+    WOOD,
+    ASH,
+    SMOKE,
+    OIL
 } ParticleType;
 
 #endif // COMMON_H

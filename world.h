@@ -9,6 +9,9 @@ extern unsigned char updated[GRID_H][GRID_W];
 extern unsigned char fire_life[GRID_H][GRID_W];
 extern unsigned char fire_falling[GRID_H][GRID_W];
 extern unsigned char grass_timer[GRID_H][GRID_W];
+extern unsigned char smoke_life[GRID_H][GRID_W];
+extern unsigned char wood_health[GRID_H][GRID_W];
+extern unsigned char leaves_ash[GRID_H][GRID_W];
 extern float temperature[GRID_H][GRID_W];
 
 // Lifecycle & simulation functions
