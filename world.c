@@ -95,7 +95,7 @@ void update_world(void) {
             switch (world[y][x]) {
                 case SAND:  try_sand(x, y); break;
                 case WATER: try_water(x, y); break;
-                case STONE: try_stone(x, y); break;
+                case GRAVEL: try_gravel(x, y); break;
                 case FIRE:  try_fire(x, y); break;
                 case GRASS: try_grass(x, y); break;
                 case WOOD:  try_wood(x, y); break;

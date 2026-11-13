@@ -7,9 +7,9 @@ A modular, interactive pixel-material sandbox written in C using [raylib](https:
 ### Materials
 1. **Sand (`1`)**: Falls under gravity, forms natural angular piles, and displaces lighter liquids (water, oil) and ash.
 2. **Water (`2`)**: Falls and spreads sideways. Quenches regular fires, cools heated cells, and is denser than oil (sinks beneath it).
-3. **Stone (`3`)**: Heavy rock and gravel. Falls and piles up like gravel/sand, sinks through liquids, and forms a solid foundation for other materials (like grass) to rest on.
+3. **Gravel (`3`)**: Coarse mineral particles. Falls and piles up like sand, sinks through liquids, and forms a solid foundation for other materials (like grass) to rest on.
 4. **Fire (`4`)**: Falls initially as hot embers, transitions to flickering rising flames, generates upward thermal convection plumes, and combusts flammable materials.
-5. **Grass (`5`)**: Falls like a light powder, settles on solid surfaces, spreads laterally across stone and wood, and combusts when heated or touched by fire.
+5. **Grass (`5`)**: Falls like a light powder, settles on solid surfaces, spreads laterally across gravel and wood, and combusts when heated or touched by fire.
 6. **Wood (`6`)**: Solid structural material. Ignites from direct contact or temperatures >= 200°C. Burns gradually, radiating heat, emitting leaping flames and rising smoke, before crumbling into ash.
 7. **Ash (`7`)**: Fine powder residue created from burning wood and grass. Falls and heaps like sand; slowly settles into water.
 8. **Smoke (`8`)**: Lightweight gas produced by combustion. Rises upward, floats up through liquids, billows sideways, and gradually dissipates.
@@ -27,7 +27,7 @@ A modular, interactive pixel-material sandbox written in C using [raylib](https:
 ## Controls
 - `1`: Select Sand
 - `2`: Select Water
-- `3`: Select Stone
+- `3`: Select Gravel
 - `4`: Select Fire
 - `5`: Select Grass
 - `6`: Select Wood
@@ -50,7 +50,7 @@ element-sandbox/
 ├── common.h         # Shared constants (grid sizes, temperatures) and ParticleType enum
 ├── world.h          # Grid storage declarations, swap helpers, and simulation interfaces
 ├── world.c          # Grid state allocation, cell manipulation, update_world(), temperature dissipation
-├── particles.h      # Material-specific behavior declarations (try_sand, try_stone, try_oil, etc.)
+├── particles.h      # Material-specific behavior declarations (try_sand, try_gravel, try_oil, etc.)
 ├── particles.c      # Physics and interaction logic for all materials
 ├── renderer.h       # Visual rendering interface declarations
 ├── renderer.c       # World pixel rendering, material colors, and HUD/UI drawing
@@ -68,9 +68,9 @@ element-sandbox/
 - **`particles.h` / `particles.c`**: Encapsulates material physics:
   - `try_sand()`: gravity, slope sliding, displacing water/oil/ash, burying grass.
   - `try_water()`: gravity, lateral flow, sinking beneath lighter oil.
-  - `try_stone()`: gravel/rock gravity, piling at angles of repose, sinking through liquids.
+  - `try_gravel()`: coarse-particle gravity, piling at angles of repose, sinking through liquids.
   - `try_fire()`: water quenching, thermal plumes, combustion of grass, wood, and oil.
-  - `try_grass()`: combustion into Fire + Smoke + Ash, powder falling, lateral growth on stone/wood.
+  - `try_grass()`: combustion into Fire + Smoke + Ash, powder falling, lateral growth on gravel/wood.
   - `try_wood()`: solid stability, burning stages, fire & smoke emission, crumbling into ash.
   - `try_ash()`: fine powder gravity and piling.
   - `try_smoke()`: buoyant upward drift, liquid bubbling, lifetime dissipation.

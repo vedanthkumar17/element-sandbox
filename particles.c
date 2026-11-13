@@ -87,10 +87,10 @@ void try_water(int x, int y) {
     }
 }
 
-void try_stone(int x, int y) {
+void try_gravel(int x, int y) {
     int dir = GetRandomValue(0, 1) ? 1 : -1;
 
-    // Stone falls and piles up like gravel/sand
+    // Gravel falls and piles up like sand
     if (empty_at(x, y + 1)) {
         swap_cells(x, y, x, y + 1);
     } else if (empty_at(x + dir, y + 1)) {
@@ -98,7 +98,7 @@ void try_stone(int x, int y) {
     } else if (empty_at(x - dir, y + 1)) {
         swap_cells(x, y, x - dir, y + 1);
     } else if (inside(x, y + 1) && (world[y + 1][x] == WATER || world[y + 1][x] == OIL || world[y + 1][x] == ASH)) {
-        // Heavy stone sinks through liquids and light ash
+        // Heavy gravel sinks through liquids and light ash
         swap_cells(x, y, x, y + 1);
     }
 }
@@ -317,8 +317,8 @@ void try_grass(int x, int y) {
         return;
     }
 
-    // 2. Light powder falling behavior (settles onto stone or solid surfaces)
-    bool on_solid = (inside(x, y + 1) && (world[y + 1][x] == STONE || world[y + 1][x] == SAND || world[y + 1][x] == WOOD)) ||
+    // 2. Light powder falling behavior (settles onto gravel or solid surfaces)
+    bool on_solid = (inside(x, y + 1) && (world[y + 1][x] == GRAVEL || world[y + 1][x] == SAND || world[y + 1][x] == WOOD)) ||
                     (y + 1 >= GRID_H);
 
     if (!on_solid) {
@@ -340,7 +340,7 @@ void try_grass(int x, int y) {
         }
     }
 
-    // 3. Spreading behavior across stone surfaces
+    // 3. Spreading behavior across gravel surfaces
     if (grass_timer[y][x] > 0) {
         grass_timer[y][x]--;
         return;
@@ -352,7 +352,7 @@ void try_grass(int x, int y) {
     if (inside(nx, y) &&
         empty_at(nx, y) &&
         inside(nx, y + 1) &&
-        (world[y + 1][nx] == STONE || world[y + 1][nx] == WOOD)) {
+        (world[y + 1][nx] == GRAVEL || world[y + 1][nx] == WOOD)) {
         world[y][nx] = GRASS;
         grass_timer[y][nx] = (unsigned char)GetRandomValue(45, 120);
     }

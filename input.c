@@ -106,7 +106,7 @@ void paint_at_mouse(void) {
 void handle_input(void) {
     if (IsKeyPressed(KEY_ONE))   selected = SAND;
     if (IsKeyPressed(KEY_TWO))   selected = WATER;
-    if (IsKeyPressed(KEY_THREE)) selected = STONE;
+    if (IsKeyPressed(KEY_THREE)) selected = GRAVEL;
     if (IsKeyPressed(KEY_FOUR))  selected = FIRE;
     if (IsKeyPressed(KEY_FIVE))  selected = GRASS;
     if (IsKeyPressed(KEY_SIX))   selected = WOOD;

@@ -12,7 +12,7 @@ Color material_color(int material, int x, int y) {
                 : (Color){226, 184, 94, 255};
         case WATER:
             return (Color){40, 140 + (unsigned char)((x + y) % 35), 245, 255};
-        case STONE:
+        case GRAVEL:
             return (Color){125, 132, 144, 255};
         case FIRE: {
             int life = fire_life[y][x];
@@ -71,7 +71,7 @@ const char *material_name(int material) {
     switch (material) {
         case SAND:  return "SAND";
         case WATER: return "WATER";
-        case STONE: return "STONE";
+        case GRAVEL: return "GRAVEL";
         case FIRE:  return "FIRE";
         case GRASS: return "GRASS";
         case WOOD:  return "WOOD";
@@ -86,7 +86,7 @@ Color material_ui_color(int material) {
     switch (material) {
         case SAND:  return (Color){240, 200, 105, 255};
         case WATER: return (Color){45, 150, 245, 255};
-        case STONE: return (Color){125, 132, 144, 255};
+        case GRAVEL: return (Color){125, 132, 144, 255};
         case FIRE:  return (Color){255, 130, 30, 255};
         case GRASS: return (Color){72, 195, 82, 255};
         case WOOD:  return (Color){145, 95, 50, 255};
@@ -154,7 +154,7 @@ void draw_ui(void) {
     } palette_items[] = {
         { SAND,  "1 Sand" },
         { WATER, "2 Water" },
-        { STONE, "3 Stone" },
+        { GRAVEL, "3 Gravel" },
         { FIRE,  "4 Fire" },
         { GRASS, "5 Grass" },
         { WOOD,  "6 Wood" },

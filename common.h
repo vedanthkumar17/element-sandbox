@@ -23,7 +23,7 @@ typedef enum {
     EMPTY = 0,
     SAND,
     WATER,
-    STONE,
+    GRAVEL,
     FIRE,
     GRASS,
     WOOD,
