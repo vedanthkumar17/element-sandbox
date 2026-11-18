@@ -2,15 +2,22 @@
 #include "world.h"
 #include "common.h"
 #include "raylib.h"
+#include <stdio.h>
 
 static int selected = SAND;
 static int brush_radius = 3;
 static bool paused = false;
+static bool is_fullscreen = false;
+static int windowed_width = SCREEN_W;
+static int windowed_height = SCREEN_H;
 
 void init_input(void) {
     selected = SAND;
     brush_radius = 3;
     paused = false;
+    is_fullscreen = false;
+    windowed_width = SCREEN_W;
+    windowed_height = SCREEN_H;
 }
 
 int get_selected_material(void) {
@@ -37,10 +44,35 @@ void set_paused(bool pause) {
     paused = pause;
 }
 
+void toggle_fullscreen(void) {
+    if (!is_fullscreen) {
+        windowed_width = GetScreenWidth();
+        windowed_height = GetScreenHeight();
+
+        int monitor = GetCurrentMonitor();
+        int monitor_w = GetMonitorWidth(monitor);
+        int monitor_h = GetMonitorHeight(monitor);
+
+        SetWindowSize(monitor_w, monitor_h);
+        ToggleFullscreen();
+        is_fullscreen = true;
+    } else {
+        ToggleFullscreen();
+        SetWindowSize(windowed_width, windowed_height);
+        is_fullscreen = false;
+    }
+}
+
 void paint_at_mouse(void) {
     Vector2 mouse = GetMousePosition();
-    int cx = (int)mouse.x / CELL;
-    int cy = (int)mouse.y / CELL;
+    int screen_w = GetScreenWidth();
+    int screen_h = GetScreenHeight();
+    if (screen_w <= 0 || screen_h <= 0) {
+        return;
+    }
+
+    int cx = (int)(mouse.x * GRID_W / screen_w);
+    int cy = (int)(mouse.y * GRID_H / screen_h);
 
     if (!inside(cx, cy)) {
         return;
@@ -104,6 +136,19 @@ void paint_at_mouse(void) {
 }
 
 void handle_input(void) {
+    if (IsWindowResized() && !is_fullscreen && !IsWindowFullscreen()) {
+        windowed_width = GetScreenWidth();
+        windowed_height = GetScreenHeight();
+    }
+
+    if (is_fullscreen != IsWindowFullscreen()) {
+        is_fullscreen = IsWindowFullscreen();
+    }
+
+    if (IsKeyPressed(KEY_F11)) {
+        toggle_fullscreen();
+    }
+
     if (IsKeyPressed(KEY_ONE))   selected = SAND;
     if (IsKeyPressed(KEY_TWO))   selected = WATER;
     if (IsKeyPressed(KEY_THREE)) selected = GRAVEL;

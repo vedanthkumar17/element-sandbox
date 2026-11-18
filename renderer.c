@@ -54,14 +54,28 @@ Color material_color(int material, int x, int y) {
 void draw_world(void) {
     ClearBackground((Color){6, 6, 8, 255});
 
+    int screen_w = GetScreenWidth();
+    int screen_h = GetScreenHeight();
+    if (screen_w <= 0 || screen_h <= 0) {
+        return;
+    }
+
     for (int y = 0; y < GRID_H; y++) {
+        int y0 = (y * screen_h) / GRID_H;
+        int y1 = ((y + 1) * screen_h) / GRID_H;
+        int h = y1 - y0;
+
         for (int x = 0; x < GRID_W; x++) {
             int material = world[y][x];
             if (material == EMPTY) {
                 continue;
             }
 
-            DrawRectangle(x * CELL, y * CELL, CELL, CELL,
+            int x0 = (x * screen_w) / GRID_W;
+            int x1 = ((x + 1) * screen_w) / GRID_W;
+            int w = x1 - x0;
+
+            DrawRectangle(x0, y0, w, h,
                           material_color(material, x, y));
         }
     }
@@ -137,8 +151,10 @@ void draw_ui(void) {
 
     // Cursor temperature readout
     Vector2 mouse = GetMousePosition();
-    int mx = (int)mouse.x / CELL;
-    int my = (int)mouse.y / CELL;
+    int screen_w = GetScreenWidth();
+    int screen_h = GetScreenHeight();
+    int mx = (screen_w > 0) ? (int)(mouse.x * GRID_W / screen_w) : -1;
+    int my = (screen_h > 0) ? (int)(mouse.y * GRID_H / screen_h) : -1;
     if (inside(mx, my)) {
         float t = temperature[my][mx];
         Color temp_col = (t >= GRASS_IGNITE_TEMP) ? (Color){ 255, 120, 60, 255 }
@@ -178,14 +194,14 @@ void draw_ui(void) {
     }
 
     // Tertiary row: Keybindings & mouse controls
-    DrawText("SPACE Pause  |  R Reset  |  RMB Erase  |  LMB Paint  |  [ / ] Brush Size",
+    DrawText("SPACE Pause  |  R Reset  |  F11 Fullscreen  |  RMB Erase  |  LMB Paint  |  [ / ] Brush Size",
              20, 61, 11, (Color){ 105, 112, 126, 255 });
 
     // Paused indicator banner
     if (paused) {
         int pw = 100;
         int ph = 26;
-        int px = SCREEN_W / 2 - pw / 2;
+        int px = GetScreenWidth() / 2 - pw / 2;
         int py = 12;
         DrawRectangleRounded((Rectangle){ px, py, pw, ph }, 0.4f, 6, (Color){ 180, 42, 42, 225 });
         DrawRectangleRoundedLinesEx((Rectangle){ px, py, pw, ph }, 0.4f, 6, 1.0f, (Color){ 245, 95, 95, 200 });

@@ -39,6 +39,7 @@ A modular, interactive pixel-material sandbox written in C using [raylib](https:
 - **Right Mouse Button (RMB)**: Erase material (clears to empty, resets temperature)
 - `Space`: Pause / Resume simulation
 - `R`: Reset world canvas
+- `F11`: Toggle fullscreen / windowed mode
 - `[` and `]`: Decrease / Increase brush radius (1 to 12 px)
 
 ## Project Architecture & File Structure

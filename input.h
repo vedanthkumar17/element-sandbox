@@ -7,6 +7,7 @@
 void init_input(void);
 void handle_input(void);
 void paint_at_mouse(void);
+void toggle_fullscreen(void);
 
 // Input state accessors
 int get_selected_material(void);
