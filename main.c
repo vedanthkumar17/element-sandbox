@@ -4,13 +4,35 @@
 #include <string.h>
 #include <time.h>
 
+#if defined(PLATFORM_WEB)
+#include <emscripten/emscripten.h>
+#endif
+
 #include "common.h"
 #include "world.h"
 #include "renderer.h"
 #include "input.h"
 
+static void update_and_draw(void) {
+    handle_input();
+
+    if (!is_paused()) {
+        update_world();
+    }
+
+    BeginDrawing();
+    draw_world();
+    draw_ui();
+    EndDrawing();
+}
+
 int main(int argc, char **argv) {
+#if !defined(PLATFORM_WEB)
     bool test_mode = (argc > 1 && strcmp(argv[1], "--test") == 0);
+#else
+    (void)argc;
+    (void)argv;
+#endif
 
     srand((unsigned int)time(NULL));
     SetRandomSeed((unsigned int)time(NULL));
@@ -23,13 +45,16 @@ int main(int argc, char **argv) {
     SetWindowMinSize(740, 480);
     SetTargetFPS(60);
 
+#if defined(PLATFORM_WEB)
+    emscripten_set_main_loop(update_and_draw, 0, 1);
+#else
     int test_frame = 0;
     int test_status = 0;
 
     while (!WindowShouldClose()) {
-        handle_input();
-
         if (test_mode) {
+            handle_input();
+
             test_frame++;
             if (test_frame == 5) {
                 SetWindowSize(1100, 750);
@@ -83,18 +108,22 @@ int main(int argc, char **argv) {
                 }
                 break;
             }
-        }
 
-        if (!is_paused()) {
-            update_world();
-        }
+            if (!is_paused()) {
+                update_world();
+            }
 
-        BeginDrawing();
-        draw_world();
-        draw_ui();
-        EndDrawing();
+            BeginDrawing();
+            draw_world();
+            draw_ui();
+            EndDrawing();
+        } else {
+            update_and_draw();
+        }
     }
 
     CloseWindow();
     return test_status;
+#endif
+    return 0;
 }

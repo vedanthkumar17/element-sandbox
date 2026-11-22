@@ -4,20 +4,28 @@
 #include "raylib.h"
 #include <stdio.h>
 
+#if defined(PLATFORM_WEB)
+#include <emscripten/emscripten.h>
+#endif
+
 static int selected = SAND;
 static int brush_radius = 3;
 static bool paused = false;
 static bool is_fullscreen = false;
+#if !defined(PLATFORM_WEB)
 static int windowed_width = SCREEN_W;
 static int windowed_height = SCREEN_H;
+#endif
 
 void init_input(void) {
     selected = SAND;
     brush_radius = 3;
     paused = false;
     is_fullscreen = false;
+#if !defined(PLATFORM_WEB)
     windowed_width = SCREEN_W;
     windowed_height = SCREEN_H;
+#endif
 }
 
 int get_selected_material(void) {
@@ -44,6 +52,11 @@ void set_paused(bool pause) {
     paused = pause;
 }
 
+#if defined(PLATFORM_WEB)
+void toggle_fullscreen(void) {
+    emscripten_run_script("toggleFullscreenWeb();");
+}
+#else
 void toggle_fullscreen(void) {
     if (!is_fullscreen) {
         windowed_width = GetScreenWidth();
@@ -62,6 +75,7 @@ void toggle_fullscreen(void) {
         is_fullscreen = false;
     }
 }
+#endif
 
 void paint_at_mouse(void) {
     Vector2 mouse = GetMousePosition();
@@ -136,6 +150,7 @@ void paint_at_mouse(void) {
 }
 
 void handle_input(void) {
+#if !defined(PLATFORM_WEB)
     if (IsWindowResized() && !is_fullscreen && !IsWindowFullscreen()) {
         windowed_width = GetScreenWidth();
         windowed_height = GetScreenHeight();
@@ -144,6 +159,12 @@ void handle_input(void) {
     if (is_fullscreen != IsWindowFullscreen()) {
         is_fullscreen = IsWindowFullscreen();
     }
+#else
+    bool web_fs = (emscripten_run_script_int("(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement) ? 1 : 0") != 0);
+    if (is_fullscreen != web_fs) {
+        is_fullscreen = web_fs;
+    }
+#endif
 
     if (IsKeyPressed(KEY_F11)) {
         toggle_fullscreen();
