@@ -1,3 +1,4 @@
 falling_sand
 falling_sand.exe
 *.o
+build/
