@@ -111,6 +111,24 @@ gcc main.c world.c particles.c renderer.c input.c -o falling_sand -Wall -Wextra 
 ./falling_sand
 ```
 
+### Web (HTML5 / WebAssembly via Emscripten)
+
+Requirements:
+- [Emscripten SDK (emsdk)](https://emscripten.org/)
+- raylib built for `PLATFORM_WEB` (`libraylib.web.a`)
+
+Compile the web version using `make`:
+```bash
+make web
+```
+
+Run a local server to test in browser:
+```bash
+make serve
+# or: python3 -m http.server 8000 --directory web
+```
+Then navigate to `http://localhost:8000` in your web browser.
+
 ### Windows (MinGW-w64)
 
 Compile using GCC:

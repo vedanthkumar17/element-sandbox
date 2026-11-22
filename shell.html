@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Element Sandbox</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background-color: #060608;
+      }
+
+      /* Canvas occupies the full viewport without extra spaces */
+      canvas.emscripten, #canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+        border: 0px none;
+        outline: none;
+        background-color: #060608;
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
+        cursor: default;
+      }
+
+      :fullscreen, :-webkit-full-screen, :-moz-full-screen, :-ms-fullscreen {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background-color: #060608;
+      }
+
+      :fullscreen #canvas, :-webkit-full-screen #canvas, :-moz-full-screen #canvas, :-ms-fullscreen #canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault(); return false;" tabindex="-1"></canvas>
+
+    <script type="text/javascript">
+      var canvas = document.getElementById('canvas');
+
+      // Cross-browser fullscreen handling
+      var lastFullscreenToggle = 0;
+      function toggleFullscreenWeb() {
+        var now = Date.now();
+        if (now - lastFullscreenToggle < 300) return;
+        lastFullscreenToggle = now;
+
+        var isFs = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+        if (!isFs) {
+          var el = document.documentElement;
+          var rfs = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+          if (rfs) {
+            rfs.call(el).catch(function(err) {
+              console.warn("Fullscreen error:", err);
+            });
+          }
+        } else {
+          var efs = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+          if (efs) {
+            efs.call(document).catch(function(err) {
+              console.warn("Exit fullscreen error:", err);
+            });
+          }
+        }
+      }
+
+      // Intercept F11 (fullscreen) and Space (page scrolling)
+      window.addEventListener('keydown', function(e) {
+        if (e.key === 'F11' || e.code === 'F11') {
+          e.preventDefault();
+          e.stopPropagation();
+          toggleFullscreenWeb();
+        } else if (e.code === 'Space' || e.key === ' ') {
+          if (document.activeElement === canvas || document.activeElement === document.body) {
+            e.preventDefault();
+          }
+        }
+      }, true);
+
+      // Prevent browser context menu anywhere for uninterrupted RMB erasing
+      window.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+        return false;
+      }, true);
+
+      // Ensure canvas maintains focus
+      function ensureFocus() {
+        if (canvas) {
+          canvas.focus();
+        }
+      }
+
+      // Trigger Raylib resize and maintain focus across all fullscreen events
+      function handleResizeOrFsChange() {
+        window.dispatchEvent(new Event('resize'));
+        ensureFocus();
+      }
+
+      ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'].forEach(function(evt) {
+        document.addEventListener(evt, handleResizeOrFsChange);
+      });
+
+      window.addEventListener('resize', ensureFocus);
+      window.addEventListener('click', ensureFocus);
+      window.addEventListener('pointerdown', ensureFocus);
+      window.addEventListener('focus', ensureFocus);
+      window.addEventListener('load', handleResizeOrFsChange);
+
+      var Module = {
+        canvas: (function() {
+          return canvas;
+        })(),
+        print: function(text) {
+          if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
+          console.log(text);
+        },
+        printErr: function(text) {
+          if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
+          console.error(text);
+        },
+        postRun: [function() {
+          handleResizeOrFsChange();
+        }]
+      };
+    </script>
+    {{{ SCRIPT }}}
+  </body>
+</html>
