@@ -1,6 +1,10 @@
-# Falling Sand Simulator (C + raylib)
+# Element Sandbox
 
-A modular, interactive pixel-material sandbox written in C using [raylib](https://www.raylib.com/).
+A 2D particle-based sandbox simulation written in C using [raylib](https://www.raylib.com/). Paint sand, water, fire, oil and more, then watch them burn, flow, float and react.
+
+**[▶ Play in your browser](https://vedanthkumar17.itch.io/element-sandbox)** (no download needed, works on desktop and mobile)
+
+<!-- TODO: add a demo GIF here, e.g. ![Element Sandbox demo](docs/demo.gif) -->
 
 ## Features & Materials
 
@@ -42,97 +46,82 @@ A modular, interactive pixel-material sandbox written in C using [raylib](https:
 - `F11`: Toggle fullscreen / windowed mode
 - `[` and `]`: Decrease / Increase brush radius (1 to 12 px)
 
-## Project Architecture & File Structure
+## How It Works
 
-The project is structured into clean, decoupled modules:
+The world is a 160 × 120 grid of cells, each drawn as a 6 px square (960 × 720 window). Every frame, each cell is updated according to the rules of the material it holds, and a per-cell "already updated" flag stops a particle from moving twice in one frame.
+
+Alongside the material grid, a separate temperature grid drives the fire and heat behavior: fire heats its neighbors, heat spreads between cells, materials ignite once they pass their threshold, and everything slowly cools back to the 20°C ambient temperature.
+
+The game is written in C99 on top of raylib. The same source builds natively (Linux, Windows) and to WebAssembly via Emscripten, which is how the browser version is produced.
+
+## Project Structure
 
 ```
 element-sandbox/
-├── common.h         # Shared constants (grid sizes, temperatures) and ParticleType enum
-├── world.h          # Grid storage declarations, swap helpers, and simulation interfaces
-├── world.c          # Grid state allocation, cell manipulation, update_world(), temperature dissipation
-├── particles.h      # Material-specific behavior declarations (try_sand, try_gravel, try_oil, etc.)
-├── particles.c      # Physics and interaction logic for all materials
-├── renderer.h       # Visual rendering interface declarations
-├── renderer.c       # World pixel rendering, material colors, and HUD/UI drawing
-├── input.h          # User input and brush state interface declarations
-├── input.c          # Keyboard shortcuts, mouse painting, and brush management
-├── main.c           # Window creation, initialization, and main game loop
-├── Makefile         # Build automation for compilation and cleanup
-└── README.md        # Project documentation and guide
+├── src/
+│   ├── common.h       # Grid/screen constants, temperature thresholds, ParticleType enum
+│   ├── world.c/.h     # Grid state, cell swaps, temperature diffusion, world update
+│   ├── particles.c/.h # Per-material physics and reactions (sand, water, fire, oil, ...)
+│   ├── renderer.c/.h  # Cell colors, smoke transparency, HUD overlay
+│   ├── input.c/.h     # Hotkeys, mouse painting, brush size
+│   └── main.c         # Window setup and main loop
+├── web/               # WebAssembly build output and HTML shell
+├── Makefile           # Native and web build targets
+├── LICENSE
+└── README.md
 ```
 
-### Module Responsibilities
+## Build from Source
 
-- **`common.h`**: Defines grid dimensions (`GRID_W = 160`, `GRID_H = 120`, `CELL = 6`), screen dimensions (`960x720`), ambient & ignition thresholds (`FIRE_TEMP`, `GRASS_IGNITE_TEMP`, `WOOD_IGNITE_TEMP`, `OIL_IGNITE_TEMP`), and the complete `ParticleType` enum.
-- **`world.h` / `world.c`**: Owns simulation grid arrays (`world`, `updated`, `fire_life`, `fire_falling`, `grass_timer`, `smoke_life`, `wood_health`, `leaves_ash`, `temperature`), boundary checks (`inside`), cell swaps (`swap_cells`), and ambient temperature diffusion (`update_temperature`).
-- **`particles.h` / `particles.c`**: Encapsulates material physics:
-  - `try_sand()`: gravity, slope sliding, displacing water/oil/ash, burying grass.
-  - `try_water()`: gravity, lateral flow, sinking beneath lighter oil.
-  - `try_gravel()`: coarse-particle gravity, piling at angles of repose, sinking through liquids.
-  - `try_fire()`: water quenching, thermal plumes, combustion of grass, wood, and oil.
-  - `try_grass()`: combustion into Fire + Smoke + Ash, powder falling, lateral growth on gravel/wood.
-  - `try_wood()`: solid stability, burning stages, fire & smoke emission, crumbling into ash.
-  - `try_ash()`: fine powder gravity and piling.
-  - `try_smoke()`: buoyant upward drift, liquid bubbling, lifetime dissipation.
-  - `try_oil()`: liquid flow, floating on water, rapid cascading flammability, long burn life.
-- **`renderer.h` / `renderer.c`**: Renders particle pixel colors with natural texture variations, burning embers, translucent smoke alpha, and the interactive HUD overlay.
-- **`input.h` / `input.c`**: Handles 1–9 and 0 material hotkeys, pause toggle, canvas reset, brush resizing, and circular mouse painting.
-- **`main.c`**: Minimal application entry point and 60 FPS update loop.
+### Requirements
+- A C compiler supporting C99 (GCC or Clang)
+- `make`
+- [raylib](https://www.raylib.com/) 5.x
 
----
+### Linux (Ubuntu / Debian)
 
-## Requirements
-- A C compiler supporting C99 or C11 (GCC or Clang)
-- `make` (optional, for build automation)
-- [raylib](https://www.raylib.com/) 5.x development libraries
-
----
-
-## Build and Run
-
-### Ubuntu / Debian
-
-Install build essentials and raylib:
 ```bash
 sudo apt update
 sudo apt install build-essential libraylib-dev
-```
-
-Compile and run using `make`:
-```bash
 make
 ./falling_sand
 ```
 
 Or compile directly with `gcc`:
 ```bash
-gcc main.c world.c particles.c renderer.c input.c -o falling_sand -Wall -Wextra -std=c99 -lraylib -lGL -lm -lpthread -ldl -lrt -lX11
+gcc src/main.c src/world.c src/particles.c src/renderer.c src/input.c -o falling_sand -Wall -Wextra -std=c99 -lraylib -lGL -lm -lpthread -ldl -lrt -lX11
 ./falling_sand
 ```
 
-### Web (HTML5 / WebAssembly via Emscripten)
+### Windows (MinGW-w64)
+
+```bash
+gcc src/main.c src/world.c src/particles.c src/renderer.c src/input.c -o falling_sand.exe -O2 -Wall -Wextra -std=c99 -I"path\to\raylib\include" -L"path\to\raylib\lib" -lraylib -lopengl32 -lgdi32 -lwinmm
+falling_sand.exe
+```
+
+### Web (WebAssembly via Emscripten)
 
 Requirements:
-- [Emscripten SDK (emsdk)](https://emscripten.org/)
-- raylib built for `PLATFORM_WEB` (`libraylib.web.a`)
+- [Emscripten SDK (emsdk)](https://emscripten.org/), activated in your shell
+- raylib compiled for `PLATFORM_WEB` (`libraylib.web.a`)
 
-Compile the web version using `make`:
+Build:
 ```bash
 make web
 ```
 
-Run a local server to test in browser:
+This writes `index.html`, `index.js` and `index.wasm` into `web/`. Browsers refuse to load WebAssembly from `file://`, so opening `index.html` by double-clicking will not work. Serve the folder instead:
+
 ```bash
 make serve
 # or: python3 -m http.server 8000 --directory web
 ```
-Then navigate to `http://localhost:8000` in your web browser.
 
-### Windows (MinGW-w64)
+Then open `http://localhost:8000`.
 
-Compile using GCC:
-```bash
-gcc main.c world.c particles.c renderer.c input.c -o falling_sand.exe -O2 -Wall -Wextra -std=c99 -I"path\to\raylib\include" -L"path\to\raylib\lib" -lraylib -lopengl32 -lgdi32 -lwinmm
-falling_sand.exe
-```
+To host your own copy (itch.io, GitHub Pages, any static host), upload the three files from `web/` together, with `index.html` at the root.
+
+## License
+
+Released under the [MIT License](LICENSE). raylib is licensed separately under the zlib license.
