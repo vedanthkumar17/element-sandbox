@@ -19,7 +19,7 @@ int main(int argc, char **argv) {
     init_input();
 
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
-    InitWindow(SCREEN_W, SCREEN_H, "C Falling Sand Simulator");
+    InitWindow(SCREEN_W, SCREEN_H, "Element Sandbox");
     SetWindowMinSize(740, 480);
     SetTargetFPS(60);
 
