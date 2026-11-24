@@ -2,7 +2,7 @@
 
 A 2D particle-based sandbox simulation written in C using [raylib](https://www.raylib.com/). Paint sand, water, fire, oil and more, then watch them burn, flow, float and react.
 
-**[▶ Play in your browser](https://vedanthkumar17.itch.io/element-sandbox)** (no download needed, works on desktop and mobile)
+**[▶ Play in your browser](https://vedanthkumar17.itch.io/element-sandbox)**  (no download needed)
 
 <!-- TODO: add a demo GIF here, e.g. ![Element Sandbox demo](docs/demo.gif) -->
 
